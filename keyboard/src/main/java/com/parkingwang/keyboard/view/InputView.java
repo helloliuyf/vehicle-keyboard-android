@@ -2,7 +2,11 @@ package com.parkingwang.keyboard.view;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Canvas;
+import android.graphics.Rect;
+import android.support.annotation.ColorInt;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -64,20 +68,16 @@ public class InputView extends LinearLayout {
         }
     };
 
+    @Nullable
+    private SelectedDrawable mSelectedDrawable;
+
     public InputView(Context context, @Nullable AttributeSet attrs) {
-        super(context, attrs);
-        inflate(context, R.layout.pwk_input_view, this);
-        mFieldViewGroup = new FieldViewGroup() {
-            @Override
-            protected Button findViewById(int id) {
-                return InputView.this.findViewById(id);
-            }
-        };
-        onInited(context, attrs);
+        this(context, attrs, R.attr.pwkInputStyle);
     }
 
     public InputView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+
         inflate(context, R.layout.pwk_input_view, this);
         mFieldViewGroup = new FieldViewGroup() {
             @Override
@@ -85,16 +85,52 @@ public class InputView extends LinearLayout {
                 return InputView.this.findViewById(id);
             }
         };
-        onInited(context, attrs);
+        onInited(context, attrs, defStyleAttr);
     }
 
-    private void onInited(Context context, AttributeSet attrs) {
-        final TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.InputView);
+    private void onInited(Context context, AttributeSet attrs, int defStyleAttr) {
+        final TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.InputView, defStyleAttr, 0);
         final float textSize = ta.getDimension(R.styleable.InputView_pwkInputTextSize, 0);
+        final String drawableClassName = ta.getString(R.styleable.InputView_pwkSelectedDrawable);
+        final int itemBorderSelectedColor = ta.getColor(R.styleable.InputView_pwkItemBorderSelectedColor,
+                ContextCompat.getColor(context, R.color.pwk_primary_color));
         ta.recycle();
+
+        initSelectedDrawable(drawableClassName, itemBorderSelectedColor);
+
         mFieldViewGroup.setupAllFieldsTextSize(textSize);
         mFieldViewGroup.setupAllFieldsOnClickListener(mOnFieldViewClickListener);
         mFieldViewGroup.changeTo7Fields();
+    }
+
+    private void initSelectedDrawable(String className, int selectedColor) {
+        if (TextUtils.isEmpty(className)) {
+            return;
+        }
+        try {
+            Class cls = Class.forName(className);
+            if (!SelectedDrawable.class.isAssignableFrom(cls)) {
+                return;
+            }
+            mSelectedDrawable = (SelectedDrawable) cls.newInstance();
+            mSelectedDrawable.setColor(selectedColor);
+            mSelectedDrawable.setWidth(getResources().getDimensionPixelSize(R.dimen.pwk_input_item_highlight_border_width));
+            mSelectedDrawable.setRadius(getResources().getDimensionPixelSize(R.dimen.pwk_input_item_radius));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setItemBorderSelectedColor(@ColorInt int itemBorderSelectedColor) {
+        if (mSelectedDrawable != null) {
+            mSelectedDrawable.setColor(itemBorderSelectedColor);
+        }
+        invalidate();
+    }
+
+    @Nullable
+    public SelectedDrawable getSelectedDrawable() {
+        return mSelectedDrawable;
     }
 
     /**
@@ -259,6 +295,7 @@ public class InputView extends LinearLayout {
         for (Button btn : mFieldViewGroup.getAvailableFields()) {
             btn.setSelected((btn == target));
         }
+        invalidate();
     }
 
     private ClickMeta getClickMeta(Button clicked) {
@@ -275,6 +312,40 @@ public class InputView extends LinearLayout {
             }
         }
         return new ClickMeta(selectedIndex, currentIndex);
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        super.draw(canvas);
+        invalidateSelectedDrawable(canvas);
+    }
+
+    private void invalidateSelectedDrawable(Canvas canvas) {
+        if (mSelectedDrawable == null) {
+            return;
+        }
+        final int count = getChildCount();
+        View lastShown = null;
+        View selected;
+        for (int i = count - 1; i >= 0; i--) {
+            selected = getChildAt(i);
+            if (lastShown == null && selected.isShown()) {
+                lastShown = selected;
+            }
+            if (selected.getVisibility() == View.VISIBLE && selected.isSelected()) {
+                if (selected == lastShown) {
+                    mSelectedDrawable.setPosition(SelectedDrawable.Position.LAST);
+                } else if (i == 0) {
+                    mSelectedDrawable.setPosition(SelectedDrawable.Position.FIRST);
+                } else {
+                    mSelectedDrawable.setPosition(SelectedDrawable.Position.MIDDLE);
+                }
+                final Rect rect = mSelectedDrawable.getRect();
+                rect.set(selected.getLeft(), selected.getTop(), selected.getRight(), selected.getBottom());
+                mSelectedDrawable.draw(canvas);
+                break;
+            }
+        }
     }
 
     //////

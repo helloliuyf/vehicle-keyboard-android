@@ -30,10 +30,6 @@
 
 ![Gif](./pwk_keyboard_usage.gif)
 
-### 车牌号码规则
-
-[中国车牌号码编码规则全解](http://yoojia.xyz/2018/05/09/chinese-vehicle-number/)
-
 ### 支持输入车牌类型
 
 支持中华人民共和国现行绝大部分车牌号码类型：
@@ -60,12 +56,14 @@ repositories {
 添加库依赖：
 
 ```groovy
-    implementation 'com.parkingwang:keyboard:0.5.6'
-    // OR
-    compile 'com.parkingwang:keyboard:0.5.6'
+implementation 'com.parkingwang:keyboard:0.7.3'
+// OR
+compile 'com.parkingwang:keyboard:0.7.3'
 ```
 
 ## 二、使用组件
+
+**注意：**有问题请先查看 [FAQ][1] 及搜索 [issue][2]。
 
 ### 2.1 车牌号码输入组件 InputView
 
@@ -146,6 +144,12 @@ mController = KeyboardInputController
 mController.useDefaultMessageHandler();
 ```
 
+**切换新能源和普通车牌是否校验**
+
+```java
+mController.setSwitchVerify(false) //不校验（默认校验）
+```
+
 ## 三、键盘功能特性设置
 
 ### 3.1 设置是否显示“确定”键
@@ -220,8 +224,6 @@ mPopupKeyboard.getKeyboardEngine().setLocalProvinceName("广东省");
 ```xml
     <!--输入框按键样式，最左最右键样式设置-->
     <style name="PWKInputItemStyleKey" parent="PWKInputItemStyle_BORDER_KEY"/>
-    <style name="PWKInputItemStyleLeft" parent="PWKInputItemStyle_BORDER_LEFT"/>
-    <style name="PWKInputItemStyleRight" parent="PWKInputItemStyle_BORDER_RIGHT"/>
     <!--输入框外部样式-->
     <style name="PWKInputViewStyle" parent="PWKInputViewStyle_MIXED"/>
 ```
@@ -233,8 +235,6 @@ mPopupKeyboard.getKeyboardEngine().setLocalProvinceName("广东省");
 ```xml
     <!--输入框按键样式，最左最右键样式设置-->
     <style name="PWKInputItemStyleKey" parent="PWKInputItemStyle_FILLED_KEY"/>
-    <style name="PWKInputItemStyleLeft" parent="PWKInputItemStyle_FILLED_LEFT"/>
-    <style name="PWKInputItemStyleRight" parent="PWKInputItemStyle_FILLED_RIGHT"/>
     <!--输入框外部样式-->
     <style name="PWKInputViewStyle" parent="PWKInputViewStyle_DIVIDED"/>
 
@@ -247,11 +247,25 @@ mPopupKeyboard.getKeyboardEngine().setLocalProvinceName("广东省");
 覆盖`PWKInputItemStyleKey / PWKInputItemStyleLeft / PWKInputItemStyleRight`和`PWKInputViewStyle`来实现。
 
 - `PWKInputItemStyleKey` 控制输入组件内每个输入框的按键Button样式，样式作用于每个Button；
-- `PWKInputItemStyleLeft` 控制输入组件内最左侧输入框的按键Button样式，样式作用于一个Button；
-- `PWKInputItemStyleRight` 控制输入组件内最右侧输入框的按键Button样式，样式作用于一个Button；
 - `PWKInputViewStyle` 控制输入组件的整体样式，作用于LinearLayout；
 
 #### 4.5.1 InputView的样式选项
+
+**注意**
+最新版本需要配置 `InputView` 的 `style`。配置方法有以下两种：
+
+在布局文件中为 `InputView` 添加以下属性：
+
+```
+    style="@style/PWKInputViewStyle"
+```
+或者是在 `Application` 或 `Activity` 所配置的 `theme` 的 `style` 中添加配置（参考 demo 项目）：
+
+```
+    <item name="pwkInputStyle">@style/PWKInputViewStyle</item>
+```
+
+**常规配置**
 
 通过覆盖以下样式配置，可以修改默认样式
 
@@ -274,6 +288,15 @@ mPopupKeyboard.getKeyboardEngine().setLocalProvinceName("广东省");
 
 ```
 
+### 4.5.2 如何自定义输入框的选中样式
+
+1. 继承 `SelectedDrawable` 并重写 `public void draw(@NonNull Canvas canvas)` 方法自己绘制选中效果。
+2. 然后将该类配置到 `InputView` 的 `app:pwkSelectedDrawable` 属性或其 `style` 中，如下所示：
+
+```
+    <item name="pwkSelectedDrawable">com.parkingwang.keyboard.view.SelectedDrawable</item>
+```
+
 ## 五、停车王车牌键盘布局切换逻辑
 
 ### 5.1 DOC文档
@@ -289,6 +312,30 @@ mPopupKeyboard.getKeyboardEngine().setLocalProvinceName("广东省");
 [百度脑图地址](http://naotu.baidu.com/file/3f07c764a7a4e6b146a827ec56b9a059?token=9ea43f483a785175)
 
 ## 六、版本更新
+
+### v0.7.3 2019.3.25
+
+- 添加了新能源和普通车牌是否需要规则校验控制选项
+
+### v0.7.1 2018.11.05
+
+- 兼容 Android P 导航栏
+
+### v0.7 2018.09.19
+
+- 增加动态设置气泡、按键主题色的方法
+
+### v0.6.1 2018.08.02
+
+- 修复在4.4.2上选择框位置不正确的问题
+
+### v0.6.0 2018.07.24
+
+- 重写选中样式的实现，使用更灵活的 Drawable 类来实现绘制选中样式，并解决原来设置背景来实现选中样式的局限。
+- 修改 InputView 的布局，去掉原来为实现选中样式而另外添加的一个 Button。
+- pwk_input_view 根标签改为 <merge></merge>，减少层级。注意：此修改将影响使用配置，相关说明见 README.md 的第 4.5.1 条“InputView 的样式选项”一节。
+- 原来对输入位是否显示的判断由 isShown() 改为 getVisibility() == View.VISIBLE，以解决在界面未显示时判断不正确的问题。
+- Fixes #19
 
 ### v0.5.5 2018.07.02
 
@@ -334,21 +381,9 @@ mPopupKeyboard.getKeyboardEngine().setLocalProvinceName("广东省");
 ## Contributors
 
 [VehicleKeyboard-Android](https://github.com/parkingwang/vehicle-keyboard-android)
-由西安艾润物联网技术服务有限公司第一事业部深圳研发中心开发和维护，旨在为停车行业同行进行技术交流和分享。
-
-目前在两位开发者在开发维护，如您有相关问题，可以通过PullRequest和Issues来提交，也可以通过邮件与我们联系。
-
-- [陈永佳](https://github.com/yoojia) 联系方式：chenyongjia@parkingwang.com
-- [黄浩杭](https://github.com/msdx) 联系方式：huanghaohang@parkingwang.com
+由西安艾润物联网技术服务有限公司第一事业部深圳研发中心开发和维护，旨在与停车行业同行进行技术交流和分享。
 
 ## 疑问与交流
 
-如果你在使用此键盘时，出现一些问题，或者有相关疑问。可以添加以下微信技术群做讨论。
-
-![WxQRCode](./QrCode-Group.png)
-
-如果群二维码过期，可以通过以下微信加好友，注明“车牌键盘”，我会拉到专门技术群做讨论。
-
-![WxQRCode](./QrCode-Yoojia.png)
-
-
+[1]: https://github.com/parkingwang/vehicle-keyboard-android/blob/master/FAQ.md
+[2]: https://github.com/parkingwang/vehicle-keyboard-android/issues

@@ -1,14 +1,15 @@
 package com.parkingwang.keyboard;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.support.annotation.ColorInt;
+import android.view.Window;
 
 import com.parkingwang.keyboard.engine.KeyboardEngine;
 import com.parkingwang.keyboard.view.InputView;
 import com.parkingwang.keyboard.view.KeyboardView;
-
-import static com.parkingwang.keyboard.PopupHelper.dismissFromActivity;
-import static com.parkingwang.keyboard.PopupHelper.showToActivity;
 
 /**
  * @author Yoojia Chen (yoojiachen@gmail.com)
@@ -21,8 +22,16 @@ public class PopupKeyboard {
 
     private KeyboardInputController mController;
 
+    private boolean isDialog = false;
+
     public PopupKeyboard(Context context) {
         mKeyboardView = new KeyboardView(context);
+    }
+
+    public PopupKeyboard(Context context, @ColorInt int bubbleTextColor, ColorStateList okKeyBackgroundColor) {
+        mKeyboardView = new KeyboardView(context);
+        mKeyboardView.setBubbleTextColor(bubbleTextColor);
+        mKeyboardView.setOkKeyTintColor(okKeyBackgroundColor);
     }
 
     public KeyboardView getKeyboardView() {
@@ -30,7 +39,17 @@ public class PopupKeyboard {
     }
 
     public void attach(InputView inputView, final Activity activity) {
-        if (mController == null) {
+        isDialog = false;
+        attach(inputView, activity.getWindow());
+    }
+
+    public void attach(InputView inputView, final Dialog dialog) {
+        isDialog = true;
+        attach(inputView, dialog.getWindow());
+    }
+
+    private void attach(InputView inputView, final Window window) {
+         if (mController == null) {
             mController = KeyboardInputController
                     .with(mKeyboardView, inputView);
             mController.useDefaultMessageHandler();
@@ -38,7 +57,7 @@ public class PopupKeyboard {
             inputView.addOnFieldViewSelectedListener(new InputView.OnFieldViewSelectedListener() {
                 @Override
                 public void onSelectedAt(int index) {
-                    show(activity);
+                    show(window);
                 }
             });
         }
@@ -53,13 +72,21 @@ public class PopupKeyboard {
     }
 
     public void show(Activity activity) {
+        show(activity.getWindow());
+    }
+
+    public void show(Window window) {
         checkAttachedController();
-        showToActivity(activity, mKeyboardView);
+        PopupHelper.showToWindow(window, mKeyboardView, isDialog);
     }
 
     public void dismiss(Activity activity) {
+        dismiss(activity.getWindow());
+    }
+
+    public void dismiss(Window window) {
         checkAttachedController();
-        dismissFromActivity(activity);
+        PopupHelper.dismissFromWindow(window);
     }
 
     public boolean isShown() {
